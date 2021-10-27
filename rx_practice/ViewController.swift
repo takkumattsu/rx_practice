@@ -69,14 +69,23 @@ class ViewModel: ViewModelType, ViewModelInputs, ViewModelOutputs{
         // ソートして
         // 表示用の Entity に変換して
         // UIへのアウトプットへ
-        rows = Observable.combineLatest(loadEmployee, getLoginInfo().asObservable())
-            .flatMap { getEmployee(token: $1.token) }
-            .map{
-                let sorted = $0.sorted { $0.age < $1.age }
-                let rows = sorted.map { $0.toRow() }
-                return rows
-            }
-            .asDriver(onErrorDriveWith: .empty())
+//        rows = Observable.combineLatest(loadEmployee, getLoginInfo().asObservable())
+//            .flatMap { getEmployee(token: $1.token) }
+//            .map{
+//                let sorted = $0.sorted { $0.age < $1.age }
+//                let rows = sorted.map { $0.toRow() }
+//                return rows
+//            }
+//            .asDriver(onErrorDriveWith: .empty())
+        rows = loadEmployee
+                .withLatestFrom(getLoginInfo().asObservable())
+                .flatMap { getEmployee(token: $0.token) }
+                .map { $0.sorted { $0.age < $1.age } }
+                .map { $0.map { $0.toRow() } }
+                .asDriver(onErrorDriveWith: .empty())
+        // 注意
+        // getLoginInfo()を呼ぶのは `withLatestFrom` で キャッシュされている情報を取得するか、最新のログイン情報を取るかで `flatMap` にするか変わってきます
+        // ソートとEmployeeRowの変換の二回、map処理を書いているが計算量が増えるので一つにまとめる方がいい場合もある
     }
 }
 
